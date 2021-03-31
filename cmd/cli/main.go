@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/jub0bs/namecheck"
 	"github.com/jub0bs/namecheck/github"
 	"github.com/jub0bs/namecheck/twitter"
 )
@@ -22,21 +23,25 @@ func main() {
 	if len(os.Args[1:]) == 0 {
 		log.Fatal("username args is required")
 	}
-	var (
-		tw      twitter.Twitter
-		gh      github.GitHub
-		valid   []string
-		invalid []string
-	)
-	fmt.Println(&tw, &gh)
-	for _, username := range os.Args[1:] {
-		if !tw.IsValid(username) || !gh.IsValid(username) {
-			invalid = append(invalid, username)
+	username := os.Args[1]
+	checkers := []namecheck.Checker{
+		&twitter.Twitter{},
+		&github.GitHub{},
+	}
+	for _, checker := range checkers {
+		if !checker.IsValid(username) {
+			fmt.Printf("%q is invalid on %s\n", username, checker)
 			continue
 		}
-		valid = append(valid, username)
+		avail, err := checker.IsAvailable(username)
+		if err != nil {
+			fmt.Printf("failed to check the availability of %q on %s\n", username, checker)
+			continue
+		}
+		if !avail {
+			fmt.Printf("%q is valid but unavailable on %s\n", username, checker)
+			continue
+		}
+		fmt.Printf("%q is valid and available on %s\n", username, checker)
 	}
-
-	fmt.Println("valid:", valid)
-	fmt.Println("invalid:", invalid)
 }
