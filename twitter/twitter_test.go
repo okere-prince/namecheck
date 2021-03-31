@@ -3,10 +3,13 @@ package twitter_test
 import (
 	"testing"
 
+	"github.com/jub0bs/namecheck"
 	"github.com/jub0bs/namecheck/twitter"
 )
 
 var tw = twitter.Twitter{}
+
+var _ namecheck.Checker = (*twitter.Twitter)(nil)
 
 func TestUsernameTooLong(t *testing.T) {
 	username := "obviously_longer_than_15_chars"

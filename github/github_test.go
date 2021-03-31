@@ -3,10 +3,13 @@ package github_test
 import (
 	"testing"
 
+	"github.com/jub0bs/namecheck"
 	"github.com/jub0bs/namecheck/github"
 )
 
 var gh = github.GitHub{}
+
+var _ namecheck.Checker = (*github.GitHub)(nil)
 
 func TestUsernameTooLong(t *testing.T) {
 	username := "obviously-longer-than-39-chars-skjdhsdkhfkshkfshdkjfhksdjhf"

@@ -27,6 +27,10 @@ func (*Twitter) IsValid(username string) bool {
 		containsOnlyLegalChars(username)
 }
 
+func (*Twitter) IsAvailable(username string) (bool, error) {
+	return false, nil
+}
+
 func isLongEnough(username string) bool {
 	return utf8.RuneCountInString(username) >= minLen
 }
