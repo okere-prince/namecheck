@@ -16,6 +16,10 @@ const (
 
 var legalPattern = regexp.MustCompile("^[0-9A-Z_a-z]*$")
 
+func (*Twitter) String() string {
+	return "Twitter"
+}
+
 func (*Twitter) IsValid(username string) bool {
 	return isLongEnough(username) &&
 		isShortEnough(username) &&

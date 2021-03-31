@@ -28,7 +28,7 @@ func main() {
 		valid   []string
 		invalid []string
 	)
-
+	fmt.Println(&tw, &gh)
 	for _, username := range os.Args[1:] {
 		if !tw.IsValid(username) || !gh.IsValid(username) {
 			invalid = append(invalid, username)

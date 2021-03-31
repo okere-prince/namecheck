@@ -19,6 +19,10 @@ const (
 
 var legalPattern = regexp.MustCompile("^[-0-9A-Za-z]*$")
 
+func (*GitHub) String() string {
+	return "GitHub"
+}
+
 func (*GitHub) IsValid(username string) bool {
 	return isLongEnough(username) &&
 		isShortEnough(username) &&
