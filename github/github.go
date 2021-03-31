@@ -1,6 +1,7 @@
 package github
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -23,6 +24,15 @@ func IsValid(username string) bool {
 		containsOnlyLegalChars(username) &&
 		containsNoIllegalPrefix(username) &&
 		containsNoIllegalSuffix(username)
+}
+
+func IsAvailable(username string) (bool, error) {
+	resp, err := http.Get("https://twitter.com/" + username)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode == http.StatusNotFound, nil
 }
 
 func isLongEnough(username string) bool {

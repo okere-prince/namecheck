@@ -22,8 +22,8 @@ func main() {
 	if len(os.Args[1:]) == 0 {
 		log.Fatal("username args is required")
 	}
-	valid := []string{}
-	invalid := []string{}
+	var valid []string
+	var invalid []string
 
 	for _, username := range os.Args[1:] {
 		if !twitter.IsValid(username) || !github.IsValid(username) {
