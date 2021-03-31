@@ -33,7 +33,7 @@ func (*GitHub) IsValid(username string) bool {
 }
 
 func (*GitHub) IsAvailable(username string) (bool, error) {
-	resp, err := http.Get("https://twitter.com/" + username)
+	resp, err := http.Get("https://github.com/" + username)
 	if err != nil {
 		return false, err
 	}
