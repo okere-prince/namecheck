@@ -22,7 +22,9 @@ func main() {
 	if len(os.Args[1:]) == 0 {
 		log.Fatal("username args is required")
 	}
-	username := os.Args[1]
-	fmt.Println(twitter.IsValid(username))
-	fmt.Println(github.IsValid(username))
+	for _, username := range os.Args[1:] {
+		const tmpl = "%q is valid on %s: %t\n"
+		fmt.Printf(tmpl, username, "Twitter", twitter.IsValid(username))
+		fmt.Printf(tmpl, username, "GitHub", github.IsValid(username))
+	}
 }
