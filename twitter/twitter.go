@@ -6,6 +6,8 @@ import (
 	"unicode/utf8"
 )
 
+type Twitter struct{}
+
 const (
 	minLen         = 1
 	maxLen         = 15
@@ -14,7 +16,7 @@ const (
 
 var legalPattern = regexp.MustCompile("^[0-9A-Z_a-z]*$")
 
-func IsValid(username string) bool {
+func (*Twitter) IsValid(username string) bool {
 	return isLongEnough(username) &&
 		isShortEnough(username) &&
 		containsNoIllegalPattern(username) &&

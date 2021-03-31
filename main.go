@@ -22,11 +22,15 @@ func main() {
 	if len(os.Args[1:]) == 0 {
 		log.Fatal("username args is required")
 	}
-	var valid []string
-	var invalid []string
+	var (
+		tw      twitter.Twitter
+		gh      github.GitHub
+		valid   []string
+		invalid []string
+	)
 
 	for _, username := range os.Args[1:] {
-		if !twitter.IsValid(username) || !github.IsValid(username) {
+		if !tw.IsValid(username) || !gh.IsValid(username) {
 			invalid = append(invalid, username)
 			continue
 		}

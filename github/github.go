@@ -7,6 +7,8 @@ import (
 	"unicode/utf8"
 )
 
+type GitHub struct{}
+
 const (
 	minLen         = 1
 	maxLen         = 39
@@ -17,7 +19,7 @@ const (
 
 var legalPattern = regexp.MustCompile("^[-0-9A-Za-z]*$")
 
-func IsValid(username string) bool {
+func (*GitHub) IsValid(username string) bool {
 	return isLongEnough(username) &&
 		isShortEnough(username) &&
 		containsNoIllegalPattern(username) &&
@@ -26,7 +28,7 @@ func IsValid(username string) bool {
 		containsNoIllegalSuffix(username)
 }
 
-func IsAvailable(username string) (bool, error) {
+func (*GitHub) IsAvailable(username string) (bool, error) {
 	resp, err := http.Get("https://twitter.com/" + username)
 	if err != nil {
 		return false, err
