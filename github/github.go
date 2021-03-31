@@ -2,6 +2,7 @@ package github
 
 import (
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -33,7 +34,7 @@ func (*GitHub) IsValid(username string) bool {
 }
 
 func (*GitHub) IsAvailable(username string) (bool, error) {
-	resp, err := http.Get("https://github.com/" + username)
+	resp, err := http.Get("https://github.com/" + url.PathEscape(username))
 	if err != nil {
 		return false, err
 	}
