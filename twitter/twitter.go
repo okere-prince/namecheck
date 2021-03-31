@@ -1,6 +1,11 @@
 package twitter
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -28,7 +33,25 @@ func (*Twitter) IsValid(username string) bool {
 }
 
 func (*Twitter) IsAvailable(username string) (bool, error) {
-	return false, nil
+	const tmpl = "https://europe-west6-namechecker-api.cloudfunctions.net/userlookup?username=%s"
+	endpoint := fmt.Sprintf(tmpl, url.QueryEscape(username))
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false, errors.New("unexpected response from API")
+	}
+	var dto struct {
+		Data interface{} `json:"data"`
+	}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&dto); err != nil {
+		return false, err
+	}
+	// the absence of a data field in the response body indicates the username's availability
+	return dto.Data == nil, nil
 }
 
 func isLongEnough(username string) bool {
