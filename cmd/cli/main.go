@@ -14,6 +14,14 @@ import (
 
 type Status int
 
+type Result struct {
+	Username  string
+	Platform  string
+	Valid     bool
+	Available bool
+	Error     error
+}
+
 const (
 	Unknown Status = iota
 	Active
@@ -37,28 +45,37 @@ func main() {
 		}
 		checkers = append(checkers, t, g)
 	}
+	results := make(chan Result)
 	var wg sync.WaitGroup
 	wg.Add(len(checkers))
 	for _, checker := range checkers {
-		go check(checker, username, &wg)
+		go check(checker, username, &wg, results)
 	}
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for res := range results {
+		fmt.Println(res)
+	}
 }
 
-func check(checker namecheck.Checker, username string, wg *sync.WaitGroup) {
+func check(checker namecheck.Checker, username string, wg *sync.WaitGroup, results chan<- Result) {
 	defer wg.Done()
-	if !checker.IsValid(username) {
-		fmt.Printf("%q is invalid on %s\n", username, checker)
+	res := Result{
+		Username: username,
+		Platform: checker.String(),
+	}
+	res.Valid = checker.IsValid(username)
+	if !res.Valid {
+		results <- res
 		return
 	}
 	avail, err := checker.IsAvailable(username)
+	res.Available = avail
 	if err != nil {
-		fmt.Printf("failed to check the availability of %q on %s\n", username, checker)
-		return
+		res.Error = err
 	}
-	if !avail {
-		fmt.Printf("%q is valid but unavailable on %s\n", username, checker)
-		return
-	}
-	fmt.Printf("%q is valid and available on %s\n", username, checker)
+	results <- res
 }
