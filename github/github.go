@@ -6,9 +6,13 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/jub0bs/namecheck"
 )
 
-type GitHub struct{}
+type GitHub struct {
+	Client namecheck.Client
+}
 
 const (
 	minLen         = 1
@@ -17,6 +21,12 @@ const (
 	illegalSuffix  = "-"
 	illegalPattern = "--"
 )
+
+func New() *GitHub {
+	return &GitHub{
+		Client: http.DefaultClient,
+	}
+}
 
 var legalPattern = regexp.MustCompile("^[-0-9A-Za-z]*$")
 
@@ -33,8 +43,8 @@ func (*GitHub) IsValid(username string) bool {
 		containsNoIllegalSuffix(username)
 }
 
-func (*GitHub) IsAvailable(username string) (bool, error) {
-	resp, err := http.Get("https://github.com/" + url.PathEscape(username))
+func (gh *GitHub) IsAvailable(username string) (bool, error) {
+	resp, err := gh.Client.Get("https://github.com/" + url.PathEscape(username))
 	if err != nil {
 		return false, err
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/jub0bs/namecheck"
@@ -24,9 +25,14 @@ func main() {
 		log.Fatal("username args is required")
 	}
 	username := os.Args[1]
+
 	checkers := []namecheck.Checker{
-		&twitter.Twitter{},
-		&github.GitHub{},
+		&twitter.Twitter{
+			Client: http.DefaultClient,
+		},
+		&github.GitHub{
+			Client: http.DefaultClient,
+		},
 	}
 	for _, checker := range checkers {
 		if !checker.IsValid(username) {
