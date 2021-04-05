@@ -37,7 +37,7 @@ func (*Twitter) IsValid(username string) bool {
 }
 
 func (tw *Twitter) IsAvailable(username string) (bool, error) {
-	const tmpl = "https://europe-west6-namechecker-api.cloudfunctions.net/userlookup?username=%s&simulateLatency=1"
+	const tmpl = "https://europe-west6-namechecker-api.cloudfunctions.net/userlookup?username=%s"
 	endpoint := fmt.Sprintf(tmpl, url.QueryEscape(username))
 	resp, err := tw.Client.Get(endpoint)
 	if err != nil {
