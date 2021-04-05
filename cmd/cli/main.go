@@ -19,7 +19,6 @@ type Result struct {
 	Platform  string
 	Valid     bool
 	Available bool
-	Error     error
 }
 
 const (
@@ -45,23 +44,39 @@ func main() {
 		}
 		checkers = append(checkers, t, g)
 	}
-	results := make(chan Result)
+	results := make(chan Result, len(checkers))
+	errc := make(chan error, len(checkers))
 	var wg sync.WaitGroup
 	wg.Add(len(checkers))
 	for _, checker := range checkers {
-		go check(checker, username, &wg, results)
+		go check(checker, username, &wg, results, errc)
 	}
 	go func() {
 		wg.Wait()
 		close(results)
 	}()
 
-	for res := range results {
-		fmt.Println(res)
+	for {
+		select {
+		case err := <-errc:
+			const tmpl = "namecheck: some error occurred: %s\n"
+			fmt.Fprintf(os.Stderr, tmpl, err)
+			return
+		case res, ok := <-results:
+			if !ok {
+				return
+			}
+			fmt.Println(res)
+		}
 	}
 }
 
-func check(checker namecheck.Checker, username string, wg *sync.WaitGroup, results chan<- Result) {
+func check(
+	checker namecheck.Checker,
+	username string,
+	wg *sync.WaitGroup,
+	results chan<- Result,
+	errc chan<- error) {
 	defer wg.Done()
 	res := Result{
 		Username: username,
@@ -73,9 +88,10 @@ func check(checker namecheck.Checker, username string, wg *sync.WaitGroup, resul
 		return
 	}
 	avail, err := checker.IsAvailable(username)
-	res.Available = avail
 	if err != nil {
-		res.Error = err
+		errc <- err
+		return
 	}
+	res.Available = avail
 	results <- res
 }
