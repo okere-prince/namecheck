@@ -1,25 +1,122 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"sync"
+
+	"github.com/gorilla/mux"
+	"github.com/jub0bs/namecheck"
+	"github.com/jub0bs/namecheck/github"
+	"github.com/jub0bs/namecheck/twitter"
+)
+
+type Status int
+
+type Result struct {
+	Username  string
+	Platform  string
+	Valid     bool
+	Available bool
+	Error     error
+}
+
+const (
+	Unknown Status = iota
+	Active
+	Suspended
+	Available
 )
 
 func main() {
-	printTenIntsConcurrently()
-}
+	r := mux.NewRouter()
+	r.HandleFunc("/check", handleCheck)
+	http.Handle("/", r)
 
-func printTenIntsConcurrently() {
-	var wg sync.WaitGroup
-	const n = 10
-	wg.Add(n)
-	for i := 0; i < n; i++ {
-		go printConcurrently(i, &wg)
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
 	}
-	wg.Wait()
 }
 
-func printConcurrently(i int, wg *sync.WaitGroup) {
+func handleCheck(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	if username == "" {
+		http.Error(w, "'username' query param is required", http.StatusBadRequest)
+		return
+	}
+	var checkers []namecheck.Checker
+	for i := 0; i < 3; i++ {
+		t := &twitter.Twitter{
+			Client: http.DefaultClient,
+		}
+		g := &github.GitHub{
+			Client: http.DefaultClient,
+		}
+		checkers = append(checkers, t, g)
+	}
+	results := make(chan Result)
+	var wg sync.WaitGroup
+	wg.Add(len(checkers))
+	for _, checker := range checkers {
+		go check(checker, username, &wg, results)
+	}
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+	w.Header().Set("Content-Type", "application/json")
+	type jsonResult struct {
+		Platform  string `json:"platform"`
+		Valid     string `json:"valid"`
+		Available string `json:"available"`
+	}
+	jsonResults := make([]jsonResult, 0, len(checkers))
+	for result := range results {
+		res := jsonResult{
+			Platform:  result.Platform,
+			Valid:     fmt.Sprintf("%t", result.Valid),
+			Available: availabilityStatus(result),
+		}
+		jsonResults = append(jsonResults, res)
+	}
+	entity := struct {
+		Username string       `json:"username"`
+		Results  []jsonResult `json:"results"`
+	}{
+		Username: username,
+		Results:  jsonResults,
+	}
+	dec := json.NewEncoder(w)
+	if err := dec.Encode(entity); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func check(checker namecheck.Checker, username string, wg *sync.WaitGroup, results chan<- Result) {
 	defer wg.Done()
-	fmt.Println(i)
+	res := Result{
+		Username: username,
+		Platform: checker.String(),
+	}
+	res.Valid = checker.IsValid(username)
+	if !res.Valid {
+		results <- res
+		return
+	}
+	avail, err := checker.IsAvailable(username)
+	res.Available = avail
+	if err != nil {
+		res.Error = err
+	}
+	results <- res
+}
+
+func availabilityStatus(res Result) string {
+	if res.Error != nil {
+		return "unknown"
+	}
+	return fmt.Sprintf("%t", res.Available)
 }
