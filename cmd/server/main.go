@@ -31,16 +31,32 @@ const (
 	Available
 )
 
-var visits uint64
+var (
+	visits uint64
+	m      = make(map[string]uint)
+	mu     sync.Mutex
+)
 
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/check", handleCheck)
 	r.HandleFunc("/visits", handleVisits)
+	r.HandleFunc("/details", handleDetails)
 	http.Handle("/", r)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func handleDetails(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	dec := json.NewEncoder(w)
+	mu.Lock()
+	defer mu.Unlock()
+	if err := dec.Encode(m); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -65,6 +81,9 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "'username' query param is required", http.StatusBadRequest)
 		return
 	}
+	mu.Lock()
+	m[username]++
+	mu.Unlock()
 	var checkers []namecheck.Checker
 	for i := 0; i < 3; i++ {
 		t := &twitter.Twitter{
