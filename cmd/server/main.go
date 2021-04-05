@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/mux"
 	"github.com/jub0bs/namecheck"
@@ -30,9 +31,12 @@ const (
 	Available
 )
 
+var visits uint64
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/check", handleCheck)
+	r.HandleFunc("/visits", handleVisits)
 	http.Handle("/", r)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -40,7 +44,22 @@ func main() {
 	}
 }
 
+func handleVisits(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	entity := struct {
+		Count uint64 `json:"visits"`
+	}{
+		Count: atomic.LoadUint64(&visits),
+	}
+	dec := json.NewEncoder(w)
+	if err := dec.Encode(entity); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
 func handleCheck(w http.ResponseWriter, r *http.Request) {
+	atomic.AddUint64(&visits, 1)
 	username := r.URL.Query().Get("username")
 	if username == "" {
 		http.Error(w, "'username' query param is required", http.StatusBadRequest)
